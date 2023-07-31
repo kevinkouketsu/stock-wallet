@@ -1,8 +1,10 @@
 use chrono::{DateTime, Utc};
+use online::{investidor10::{Investidor10Api}, OnlineWallet};
 use serde::Deserialize;
 use std::error::Error;
 use wallet::{Currency, Event, TransactionInfo, Wallet};
 
+pub mod online;
 pub mod stock;
 pub mod wallet;
 
@@ -71,16 +73,22 @@ fn import_csv_to_entries<R: std::io::Read>(reader: R) -> Result<Vec<Event>, Box<
     Ok(csv_entries)
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    //["]([\d]+),([\d]+)["]
     let entries = import_csv_to_entries(std::io::stdin()).unwrap();
     let position = Wallet::from_transactions(entries);
 
+    let investidor10 = Investidor10Api::new("eyJpdiI6Im54cDVZekJlYU1BdGppaXMvNjZmV0E9PSIsInZhbHVlIjoiMEFETmwxUFRhMnJyZ2RtK0Y2dU9tZ3hpYjNJekV2SlJJUFhjTHdpZm5wSzJzQW9qOHVsRWdGYnllRUNzM0tSbXEwUnk1V1FRcE4zL0RkNlV5QmFKb2FacVUrRk9EOFk4OUJTQm9hV2JnZUsrR3hLaVBnSHJWQTZSRGlhc2RmdEsiLCJtYWMiOiI0ZjcwMGQwMjgwYTVmOGRkNzQ2NzBkNzNhODE5YmE5Y2JkYzQxOWJmZTgzZTMzZDk2ZTUwZmI5N2RjYTI2OGNjIn0%3D", 194632);
     for ticker in position.wealth() {
-        println!(
-            "{} {}, {:?}",
-            ticker.name(),
-            ticker.average_price(),
-            ticker.position()
-        );
+        for event in ticker.events() {
+            if (investidor10.add_asset(event.clone()).await).is_err() {
+                println!("{:?} failed to be added", event);
+            } else {
+                println!("{:?} added with success", event);
+            }
+        }
     }
+
+    Ok(())
 }

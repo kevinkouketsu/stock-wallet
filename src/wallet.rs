@@ -5,7 +5,7 @@ use std::collections::{hash_map::Entry, HashMap};
 pub type Code = String;
 pub type Currency = f64;
 
-#[derive(Default, Debug, Deserialize)]
+#[derive(Default, Debug, Deserialize, Clone)]
 pub struct TransactionInfo {
     date: DateTime<Utc>,
     amount: i32,
@@ -30,14 +30,14 @@ impl TransactionInfo {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub enum Event {
     Sell(Code, TransactionInfo),
     Buy(Code, TransactionInfo),
 }
 
 impl Event {
-    pub fn code(&self) -> &str {
+    pub fn code(&self) -> &Code {
         match self {
             Event::Sell(code, _) => code,
             Event::Buy(code, _) => code,
@@ -54,6 +54,12 @@ impl Event {
         match self {
             Event::Sell(_, transaction) => transaction.price,
             Event::Buy(_, transaction) => transaction.price,
+        }
+    }
+    pub fn date(&self) -> DateTime<Utc> {
+        match self {
+            Event::Sell(_, transaction) => transaction.date,
+            Event::Buy(_, transaction) => transaction.date,
         }
     }
 }
@@ -138,6 +144,10 @@ impl<'a> WalletTicker<'a> {
             }),
             _ => None,
         }
+    }
+
+    pub fn events(&self) -> &'_ [Event] {
+        self.events
     }
 }
 
